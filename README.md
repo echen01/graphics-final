@@ -9,6 +9,8 @@ Checkerboard rendering is also used to upscale images to 4k. I am curious to see
 # Features
 
 ### Shading:
+- Wireframe
+- Flat shading
 - Gouraud shading
 - Phong shading
 
