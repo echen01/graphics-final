@@ -127,29 +127,31 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
                 color = (view, ambient, light, symbols, reflect)
                 print('color', color)
             
-            scanline_convert(polygons, point, screen, zbuffer, color)
-
-            # draw_line( int(polygons[point][0]),
-            #            int(polygons[point][1]),
-            #            polygons[point][2],
-            #            int(polygons[point+1][0]),
-            #            int(polygons[point+1][1]),
-            #            polygons[point+1][2],
-            #            screen, zbuffer, color)
-            # draw_line( int(polygons[point+2][0]),
-            #            int(polygons[point+2][1]),
-            #            polygons[point+2][2],
-            #            int(polygons[point+1][0]),
-            #            int(polygons[point+1][1]),
-            #            polygons[point+1][2],
-            #            screen, zbuffer, color)
-            # draw_line( int(polygons[point][0]),
-            #            int(polygons[point][1]),
-            #            polygons[point][2],
-            #            int(polygons[point+2][0]),
-            #            int(polygons[point+2][1]),
-            #            polygons[point+2][2],
-            #            screen, zbuffer, color)
+            if shading_type != 'wireframe':
+                scanline_convert(polygons, point, screen, zbuffer, color)
+                
+            else:
+                draw_line( int(polygons[point][0]),
+                            int(polygons[point][1]),
+                            polygons[point][2],
+                            int(polygons[point+1][0]),
+                            int(polygons[point+1][1]),
+                            polygons[point+1][2],
+                            screen, zbuffer, color)
+                draw_line( int(polygons[point+2][0]),
+                            int(polygons[point+2][1]),
+                            polygons[point+2][2],
+                            int(polygons[point+1][0]),
+                            int(polygons[point+1][1]),
+                            polygons[point+1][2],
+                            screen, zbuffer, color)
+                draw_line( int(polygons[point][0]),
+                            int(polygons[point][1]),
+                            polygons[point][2],
+                            int(polygons[point+2][0]),
+                            int(polygons[point+2][1]),
+                            polygons[point+2][2],
+                            screen, zbuffer, color)
         point+= 3
 
 
