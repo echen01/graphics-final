@@ -1,0 +1,19 @@
+push
+move 170 170 0
+rotate z 30
+rotate y 30
+rotate x 45
+scale .2 .2 .2
+torus 0 0 0 75 150
+push
+move 70 130 0
+torus 0 0 0 75 150
+push
+move 60 130 0
+torus 0 0 0 75 150
+move -60 130 0
+torus 0 0 0 75 150
+move 90 130 0
+torus 0 0 0 75 150
+display
+save donut.png

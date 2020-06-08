@@ -2,6 +2,8 @@ from display import *
 from matrix import *
 from gmath import *
 
+shading_type = 'l'
+vertex_lighting = []
 def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, color):
     if x0 > x1:
         tx = x0
@@ -14,8 +16,19 @@ def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, color):
     x = x0
     z = z0
     delta_z = (z1 - z0) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0
-
+    #print('x1, x0', x1, x0)
+    if shading_type != 'flat':
+        origin_color = color
     while x <= x1:
+        if shading_type != 'flat':
+            global vertex_lighting
+            color = [0,0,0]
+            #print('origin color: ', vertex_lighting[1][2])
+            for i in range(0, 3):
+                try:
+                    color[i] = origin_color[i] +  (vertex_lighting[1][i] - origin_color[i]) * (x - x0) / (x1 - x0)
+                except ZeroDivisionError:
+                    color = origin_color
         plot(screen, zbuffer, color, x, y, z)
         x+= 1
         z+= delta_z
@@ -29,6 +42,15 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
     points = [ (polygons[i][0], polygons[i][1], polygons[i][2]),
                (polygons[i+1][0], polygons[i+1][1], polygons[i+1][2]),
                (polygons[i+2][0], polygons[i+2][1], polygons[i+2][2]) ]
+    
+    if shading_type != 'flat':
+        global vertex_lighting
+        vertex_lighting = get_vertex_lighting(points, *color)
+        print(vertex_lighting)
+        lighting_dy = [0,0,0]
+        lighting_dy[0] = vertex_lighting[TOP][0] - vertex_lighting[BOT][0]
+        lighting_dy[1] = vertex_lighting[TOP][1] - vertex_lighting[BOT][1]
+        lighting_dy[2] = vertex_lighting[TOP][2] - vertex_lighting[BOT][2]
 
     # alas random color, we hardly knew ye
     #color = [0,0,0]
@@ -41,6 +63,8 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
     z0 = points[BOT][2]
     x1 = points[BOT][0]
     z1 = points[BOT][2]
+    
+
     y = int(points[BOT][1])
 
     distance0 = int(points[TOP][1]) - y * 1.0 + 1
@@ -62,6 +86,14 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
             z1 = points[MID][2]
 
         #draw_line(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, color)
+        if shading_type != 'flat':
+            color = [0,0,0]
+            for i in range(0, 3):
+                try: 
+                    color[i] = vertex_lighting[BOT][i] + lighting_dy[i] * (y - int(points[BOT][1])) / (int(points[TOP][1]) - int(points[BOT][1]))
+                except ZeroDivisionError:
+                    color = vertex_lighting[BOT]
+           # print('SCAN LINE COLOR:', color)
         draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
         x0+= dx0
         z0+= dz0
@@ -70,7 +102,7 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
         y+= 1
 
 
-
+ 
 def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x0, y0, z0)
     add_point(polygons, x1, y1, z1)
@@ -80,7 +112,8 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
     if len(polygons) < 2:
         print('Need at least 3 points to draw')
         return
-
+    calculate_vertex_normals(polygons)
+    print(VERTEX_NORMALS)
     point = 0
     while point < len(polygons) - 2:
 
@@ -88,8 +121,12 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
 
         #print normal
         if normal[2] > 0:
-
-            color = get_lighting(normal, view, ambient, light, symbols, reflect )
+            if (shading_type == 'flat'):
+                color = get_lighting(normal, view, ambient, light, symbols, reflect )
+            else:
+                color = (view, ambient, light, symbols, reflect)
+                print('color', color)
+            
             scanline_convert(polygons, point, screen, zbuffer, color)
 
             # draw_line( int(polygons[point][0]),

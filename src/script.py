@@ -157,6 +157,13 @@ def run(filename):
             matrix_mult( stack[-1], tmp )
             stack[-1] = [ x[:] for x in tmp]
             tmp = []
+        elif c == 'shading':
+            if args[0] == 'wireframe':
+                pass
+            elif args[0] == 'phong':
+                pass
+            elif args[0] == 'gouraud':
+                pass
         elif c == 'push':
             stack.append([x[:] for x in stack[-1]] )
         elif c == 'pop':

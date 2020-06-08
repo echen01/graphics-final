@@ -12,7 +12,7 @@ from display import *
 
   # Reflection constants (ka, kd, ks) are represened as arrays of
   # doubles (red, green, blue)
-
+VERTEX_NORMALS = {}
 AMBIENT = 0
 DIFFUSE = 1
 SPECULAR = 2
@@ -20,6 +20,42 @@ LOCATION = 0
 COLOR = 1
 SPECULAR_EXP = 4
 
+def calculate_vertex_normals(polygons): 
+    point = 0
+    for polygon in polygons:
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygon[0:3]])] = [0,0,0]
+
+    while point < len(polygons) - 2:
+        normal = calculate_normal(polygons, point)
+        #normalize(normal)
+
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point][0:3]])][0] += normal[0]
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point][0:3]])][1] += normal[1]
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point][0:3]])][2] += normal[2]
+
+
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point+1][0:3]])][0] += normal[0]
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point+1][0:3]])][1] += normal[1]
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point+1][0:3]])][2] += normal[2]
+
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point+2][0:3]])][0] += normal[0]
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point+2][0:3]])][1] += normal[1]
+        VERTEX_NORMALS[tuple([int(poly) for poly in polygons[point+2][0:3]])][2] += normal[2]
+
+        point += 3
+
+    #for vertex in VERTEX_NORMALS.keys():
+    #    normalize(VERTEX_NORMALS[vertex])
+
+def get_vertex_lighting(points, view, ambient, light, symbols, reflect):
+    v0 = VERTEX_NORMALS[tuple([int(point) for point in points[0]])]
+    v1 = VERTEX_NORMALS[tuple([int(point) for point in points[1]])]
+    v2 = VERTEX_NORMALS[tuple([int(point) for point in points[2]])]
+    light0 = get_lighting(v0, view, ambient, light, symbols, reflect)
+    light1 = get_lighting(v1, view, ambient, light, symbols, reflect)
+    light2 = get_lighting(v2, view, ambient, light, symbols, reflect)
+    print('light0', light0)
+    return [light0, light1, light2]
 #lighting functions
 def get_lighting(normal, view, ambient, light, symbols, reflect ):
 
@@ -98,7 +134,6 @@ def dot_product(a, b):
 #Calculate the surface normal for the triangle whose first
 #point is located at index i in polygons
 def calculate_normal(polygons, i):
-
     A = [0, 0, 0]
     B = [0, 0, 0]
     N = [0, 0, 0]
