@@ -2,33 +2,42 @@ from display import *
 from matrix import *
 from gmath import *
 
-shading_type = 'l'
+shading_type = 'phong'
 vertex_lighting = []
 def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, color):
+    global vertex_lighting
     if x0 > x1:
         tx = x0
         tz = z0
         x0 = x1
         z0 = z1
-        x1 = tx
+        x1 = tx 
         z1 = tz
+        if shading_type != 'flat':   
+            origin_color = color[1]
+            end_color = color[0]
+    elif shading_type != 'flat':
+        origin_color = color[0]
+        end_color = color[1]
 
+    if shading_type == 'phong':
+        color_params = color[2]
     x = x0
     z = z0
     delta_z = (z1 - z0) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0
     #print('x1, x0', x1, x0)
-    if shading_type != 'flat':
-        origin_color = color
+    
     while x <= x1:
-        if shading_type != 'flat':
-            global vertex_lighting
+        if shading_type !='flat':  
             color = [0,0,0]
-            #print('origin color: ', vertex_lighting[1][2])
             for i in range(0, 3):
-                try:
-                    color[i] = origin_color[i] +  (vertex_lighting[1][i] - origin_color[i]) * (x - x0) / (x1 - x0)
-                except ZeroDivisionError:
-                    color = origin_color
+                x_diff = (x - x0) / (x1 - x0 + 1)
+                color[i] = origin_color[i] +  (end_color[i] - origin_color[i]) * x_diff
+            if shading_type == 'phong':
+                #print(color_params)
+                color = get_lighting(color, *color_params)
+            color = [int(c) for c in color]
+
         plot(screen, zbuffer, color, x, y, z)
         x+= 1
         z+= delta_z
@@ -42,17 +51,7 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
     points = [ (polygons[i][0], polygons[i][1], polygons[i][2]),
                (polygons[i+1][0], polygons[i+1][1], polygons[i+1][2]),
                (polygons[i+2][0], polygons[i+2][1], polygons[i+2][2]) ]
-    
-    if shading_type != 'flat':
-        global vertex_lighting
-        vertex_lighting = get_vertex_lighting(points, *color)
-        print(vertex_lighting)
-        lighting_dy = [0,0,0]
-        lighting_dy[0] = vertex_lighting[TOP][0] - vertex_lighting[BOT][0]
-        lighting_dy[1] = vertex_lighting[TOP][1] - vertex_lighting[BOT][1]
-        lighting_dy[2] = vertex_lighting[TOP][2] - vertex_lighting[BOT][2]
-
-    # alas random color, we hardly knew ye
+        # alas random color, we hardly knew ye
     #color = [0,0,0]
     #color[RED] = (23*(i/3)) %256
     #color[GREEN] = (109*(i/3)) %256
@@ -65,7 +64,9 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
     z1 = points[BOT][2]
     
 
+
     y = int(points[BOT][1])
+    y0 = int(points[BOT][1])
 
     distance0 = int(points[TOP][1]) - y * 1.0 + 1
     distance1 = int(points[MID][1]) - y * 1.0 + 1
@@ -76,6 +77,39 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
     dx1 = (points[MID][0] - points[BOT][0]) / distance1 if distance1 != 0 else 0
     dz1 = (points[MID][2] - points[BOT][2]) / distance1 if distance1 != 0 else 0
 
+### 
+
+#Shading
+
+###
+    
+
+    if shading_type == 'gouraud':
+        global vertex_lighting
+        vertex_lighting = get_vertex_lighting(points, *color)
+        #print(vertex_lighting)
+        lighting_dy0 = [0,0,0]
+        lighting_dy1 = [0,0,0]
+        for i in range(0,3):
+            lighting_dy0[i] = vertex_lighting[TOP][i] - vertex_lighting[BOT][i]
+            lighting_dy1[i] = vertex_lighting[MID][i] - vertex_lighting[BOT][i]
+
+        ly = vertex_lighting[BOT]
+        ldist = distance1
+    
+    if shading_type == 'phong':
+        color_params = color
+        normals = get_vertex_normals(points, norm=True)
+        normal_dy0 = [0,0,0]
+        normal_dy1 = [0,0,0]
+        for i in range(0,3):
+            normal_dy0[i] = normals[TOP][i] - normals[BOT][i]
+            normal_dy1[i] = normals[MID][i] - normals[BOT][i]
+
+        ny = normals[BOT]
+        ldist = distance1
+
+
     while y <= int(points[TOP][1]):
         if ( not flip and y >= int(points[MID][1])):
             flip = True
@@ -85,15 +119,45 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
             x1 = points[MID][0]
             z1 = points[MID][2]
 
+            if shading_type == 'gouraud' or shading_type == 'phong':
+                y0 = int(points[MID][1])
+                ldist = distance2
+
+            if shading_type == 'gouraud':
+                ly = vertex_lighting[MID]
+                for i in range(0, 3):
+                    lighting_dy1[i] = vertex_lighting[TOP][i] - vertex_lighting[MID][i]
+            if shading_type == 'phong':
+                ny = normals[MID]
+                for i in range(0, 3):
+                    normal_dy1[i] = normals[TOP][i] - normals[MID][i]
+
+
         #draw_line(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, color)
-        if shading_type != 'flat':
-            color = [0,0,0]
+        if shading_type == 'gouraud':
+            color0 = [0,0,0]
+            color1 = [0,0,0]
+            y_step0 = (y - int(points[BOT][1])) / distance0
+            y_step1 = (y - y0) / ldist
             for i in range(0, 3):
-                try: 
-                    color[i] = vertex_lighting[BOT][i] + lighting_dy[i] * (y - int(points[BOT][1])) / (int(points[TOP][1]) - int(points[BOT][1]))
-                except ZeroDivisionError:
-                    color = vertex_lighting[BOT]
-           # print('SCAN LINE COLOR:', color)
+                color0[i] = vertex_lighting[BOT][i] + lighting_dy0[i] * y_step0
+                color1[i] = ly[i] + lighting_dy1[i] * y_step1
+            color = (color0, color1)
+            
+            print('SCAN LINE COLOR:', color)
+
+        if shading_type == 'phong':
+            norm0 = [0,0,0] 
+            norm1 = [0,0,0]
+            y_step0 = (y - int(points[BOT][1])) / distance0
+            y_step1 = (y - y0) / ldist
+            for i in range(0, 3):
+                norm0[i] = normals[BOT][i] + normal_dy0[i] * y_step0
+                norm1[i] = ny[i] + normal_dy1[i] * y_step1
+            #print(color_params)
+            color = (norm0, norm1, color_params)
+
+            
         draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
         x0+= dx0
         z0+= dz0
@@ -112,8 +176,9 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
     if len(polygons) < 2:
         print('Need at least 3 points to draw')
         return
-    calculate_vertex_normals(polygons)
-    print(VERTEX_NORMALS)
+    if shading_type == 'gouraud' or shading_type == 'phong':
+        calculate_vertex_normals(polygons)
+        #print('v normals: ', VERTEX_NORMALS)
     point = 0
     while point < len(polygons) - 2:
 
@@ -123,9 +188,9 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
         if normal[2] > 0:
             if (shading_type == 'flat'):
                 color = get_lighting(normal, view, ambient, light, symbols, reflect )
-            else:
+            elif shading_type == 'gouraud' or shading_type == 'phong':
                 color = (view, ambient, light, symbols, reflect)
-                print('color', color)
+                #print('color', color)
             
             if shading_type != 'wireframe':
                 scanline_convert(polygons, point, screen, zbuffer, color)

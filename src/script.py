@@ -158,12 +158,9 @@ def run(filename):
             stack[-1] = [ x[:] for x in tmp]
             tmp = []
         elif c == 'shading':
-            if args[0] == 'wireframe':
-                pass
-            elif args[0] == 'phong':
-                pass
-            elif args[0] == 'gouraud':
-                pass
+            global shading_type
+            shading_type = command['shade_type']
+            
         elif c == 'push':
             stack.append([x[:] for x in stack[-1]] )
         elif c == 'pop':

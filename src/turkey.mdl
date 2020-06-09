@@ -1,0 +1,134 @@
+constants dull_brown 0.3 0.4 0.2 0.3 0.2 0.2 0 0 0
+constants black 0 0 0 0 0 0 0 0 0
+constants dull_yellow 0.3 0.8 0.4 0.3 0.8 0.2 0 0 0
+constants dull_orange 0.8 0.8 0.8 0.1 0.4 0.2 0 0 0
+constants dull_red 0.3 0.8 1 0 0 0 0 0 0
+push
+move 250 250 0
+rotate x 20
+rotate y -25
+rotate z 10
+// body
+push
+scale 1.25 1 1
+sphere dull_brown 0 0 0 108
+pop
+// wings
+push
+rotate z 5
+scale 1 1.25 1.25
+torus dull_brown 0 0 0 45 60
+pop
+// neck
+push
+move 150 200 0
+push
+rotate z 30
+rotate y -75
+rotate x 30
+scale 1 1 6
+box dull_brown -40 10 35 40 30 30
+pop
+// head
+push
+scale 1.35 1 1
+sphere dull_brown 0 -15 -10 25
+pop
+// eyes
+push
+scale .5 .5 1
+sphere black 20 -10 -5 18
+pop
+// beak
+push
+box dull_yellow 30 -5 14 30 10 28
+box dull_yellow 30 -15 10 25 5 20
+box dull_red 30 -15 8 5 30 16
+pop
+pop
+// legs and feet
+push
+move -40 -80 0
+rotate z -10
+box dull_yellow 0 0 -30 15 120 15
+box dull_yellow -5 -120 -30 50 5 25
+box dull_yellow 0 0 30 15 120 15
+box dull_yellow -5 -120 30 50 5 25
+pop
+// tail
+push
+move -120 0 0
+box dull_orange 0 250 0 1 250 40
+// left (in relation to viewer) front tail feathers
+push
+rotate x 15
+rotate y 5
+box dull_red 0 250 30 1 250 40
+rotate x 15
+rotate y 5
+box dull_yellow 0 250 40 1 250 40
+rotate x 15
+rotate y 5
+box dull_orange 0 250 50 1 250 40
+rotate x 15
+rotate y 5
+box dull_red 0 250 60 1 250 40
+rotate x 15
+rotate y 5
+box dull_yellow 0 250 70 1 250 40
+pop
+// right (in relation to viewer) front tail feathers
+push
+rotate x -15
+rotate y -5
+box dull_red 0 250 -30 1 250 40
+rotate x -15
+rotate y -5
+box dull_yellow 0 250 -40 1 250 40
+rotate x -15
+rotate y -5
+box dull_orange 0 250 -50 1 250 40
+rotate x -15
+rotate y -5
+box dull_red 0 250 -60 1 250 40
+rotate x -15
+rotate y -5
+box dull_yellow 0 250 -70 1 250 40
+pop
+// right (in relation to viewer) back tail feathers
+push
+rotate x -2.5
+rotate y -2.5
+box dull_yellow -8 250 -45 1 250 45
+rotate x -15
+rotate y -5
+box dull_orange -8 250 -55 1 250 45
+rotate x -15
+rotate y -5
+box dull_red -8 250 -65 1 250 45
+rotate x -15
+rotate y -5
+box dull_yellow -8 250 -75 1 250 45
+rotate x -15
+rotate y -5
+box dull_orange -8 250 -85 1 250 45
+pop
+// left (in relation to viewer) back tail feathers
+push
+rotate x 2.5
+rotate y 2.5
+box dull_yellow -8 250 20 1 250 45
+rotate x 15
+rotate y 5
+box dull_orange -8 250 55 1 250 45
+rotate x 15
+rotate y 5
+box dull_red -8 250 65 1 250 45
+rotate x 15
+rotate y 5
+box dull_yellow -8 250 75 1 250 45
+rotate x 15
+rotate y 5
+box dull_orange -8 250 75 1 250 45
+display
+save turkey.png

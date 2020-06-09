@@ -24,7 +24,7 @@ def calculate_vertex_normals(polygons):
     point = 0
     for polygon in polygons:
         VERTEX_NORMALS[tuple([int(poly) for poly in polygon[0:3]])] = [0,0,0]
-
+    #print(VERTEX_NORMALS)
     while point < len(polygons) - 2:
         normal = calculate_normal(polygons, point)
         #normalize(normal)
@@ -47,14 +47,22 @@ def calculate_vertex_normals(polygons):
     #for vertex in VERTEX_NORMALS.keys():
     #    normalize(VERTEX_NORMALS[vertex])
 
+def get_vertex_normals(points, norm = False):
+    v0 = VERTEX_NORMALS[tuple([int(point) for point in points[0]])].copy()
+    v1 = VERTEX_NORMALS[tuple([int(point) for point in points[1]])].copy()
+    v2 = VERTEX_NORMALS[tuple([int(point) for point in points[2]])].copy()
+    if norm:
+        normalize(v0)
+        normalize(v1)
+        normalize(v2)
+
+    return (v0, v1, v2)
 def get_vertex_lighting(points, view, ambient, light, symbols, reflect):
-    v0 = VERTEX_NORMALS[tuple([int(point) for point in points[0]])]
-    v1 = VERTEX_NORMALS[tuple([int(point) for point in points[1]])]
-    v2 = VERTEX_NORMALS[tuple([int(point) for point in points[2]])]
+    v0, v1, v2 = get_vertex_normals(points)
     light0 = get_lighting(v0, view, ambient, light, symbols, reflect)
     light1 = get_lighting(v1, view, ambient, light, symbols, reflect)
     light2 = get_lighting(v2, view, ambient, light, symbols, reflect)
-    print('light0', light0)
+    #print('light0', light0)
     return [light0, light1, light2]
 #lighting functions
 def get_lighting(normal, view, ambient, light, symbols, reflect ):
@@ -65,7 +73,7 @@ def get_lighting(normal, view, ambient, light, symbols, reflect ):
     normalize(view)
     r = symbols[reflect][1]
 
-    a = calculate_ambient(ambient, r)
+    a = calculate_ambient(ambient, r)   
     d = calculate_diffuse(light, r, n)
     s = calculate_specular(light, r, view, n)
 
@@ -74,7 +82,7 @@ def get_lighting(normal, view, ambient, light, symbols, reflect ):
     i[GREEN] = int(a[GREEN] + d[GREEN] + s[GREEN])
     i[BLUE] = int(a[BLUE] + d[BLUE] + s[BLUE])
     limit_color(i)
-
+    #print('color pritned: ', i)
     return i
 
 def calculate_ambient(alight, reflect):
