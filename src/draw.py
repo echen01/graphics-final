@@ -1,6 +1,7 @@
 from display import *
 from matrix import *
 from gmath import *
+from raytrace import *
 
 shading_type = 'phong'
 vertex_lighting = []
@@ -186,6 +187,9 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
 
         #print normal
         if normal[2] > 0:
+            direction = vector_subtraction(polygons[point][0:3], view)
+            normalize(direction)
+            print(intersect_polygons(view,direction, polygons, point))
             if (shading_type == 'flat'):
                 color = get_lighting(normal, view, ambient, light, symbols, reflect )
             elif shading_type == 'gouraud' or shading_type == 'phong':

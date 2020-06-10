@@ -159,3 +159,29 @@ def calculate_normal(polygons, i):
     N[2] = A[0] * B[1] - A[1] * B[0]
 
     return N
+
+def cross_product(a, b):
+    N = [0, 0, 0]
+    N[0] = a[1] * b[2] - a[2] * b[1]
+    N[1] = a[2] * b[0] - a[0] * b[2]
+    N[2] = a[0] * b[1] - a[1] * b[0]
+    return N
+
+def vector_addition(a, b):
+    out = []
+    for i in range(0, len(a)):
+        out.append(a[i] + b[i])
+    return out
+
+
+def vector_subtraction(a, b):
+    out = []
+    for i in range(0, len(a)):
+        out.append(a[i] - b[i])
+    return out
+
+def scalar_multiplication(v, s):
+    out = []
+    for i in range (0, len(v)):
+        out[i] = v[i] * s
+    return out

@@ -60,16 +60,12 @@ def run(filename):
         print("Parsing failed.")
         return
 
-    view = [0,
-            0,
-            1];
+    view = [0, 0.35, -1]
     ambient = [50,
                50,
                50]
-    light = [[0.5,
-              0.75,
-              1],
-             [255,
+    light = [[5, 5, -10],
+             [150,
               255,
               255]]
 
