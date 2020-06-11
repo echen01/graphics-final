@@ -13,6 +13,7 @@ Checkerboard rendering is also used to upscale images to 4k. I am curious to see
 - Flat shading
 - Gouraud shading
 - Phong shading
+- Ray tracing
 
 ### Antialiasing:
 - Super sampling    

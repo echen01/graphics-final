@@ -172,21 +172,22 @@ def trace_ray(rayO, rayD, polygons, view, ambient, light, symbols, reflect):
     
     N_const = [0,0,0]
     for x in range(0, 3):
-        N_const[x] = M[x] + N[x] * 0.0001
+        N_const[x] = M[x] + N[x] * .0001
     
     #toL = normalize(vector_subtraction(light, M))
     #l= [intersect_polygons(N_const, toL, polygons, i) for k, obj_sh in enumerate(polygons)]
     color_ray = get_lighting(normal, view, ambient, light, symbols, reflect)
     return obj_idx, M, normal, color_ray
 
-def trace_rays(screen, depth_max, view, polygons, ambient, light, symbols, reflect):
+def trace_rays(screen, zbuffer, view, polygons, ambient, light, symbols, reflect, max_depth = 4):
     w = len(screen[0])
     r = float(w) / len(screen)
-    for i, x in enumerate(screen):
-        if i % 10 == 0:
-            print(i / float(w) * 100 , "%")
-        for j, y in enumerate(screen[i]):
-            rayD = find_nearest()
+    for j in YRES:
+        if j % 10 == 0:
+            print(j / float(w) * 100 , "%")
+        for i in XRES:
+            color = [0,0,0]
+            rayD = normalize(vector_subtraction((i,j,0), view))
             rayO = view
             while depth < depth_max:
                 traced = trace_ray(rayO, rayD, polygons, view, ambient, light, symbols, reflect)
@@ -199,5 +200,7 @@ def trace_rays(screen, depth_max, view, polygons, ambient, light, symbols, refle
                 rayD = vector_subtraction(rayD, scalar_multiplication(N, 2 * dot_product(rayD, N))))
                 normalize(rayD)
                 depth += 1
+                color = vector_addition(color, color_ray)
+            plot(screen, zbuffer, color, i, j,)
 
                     
