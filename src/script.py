@@ -20,11 +20,30 @@ from draw import *
   ==================== """
 def first_pass( commands ):
 
+    frameCheck = varyCheck = nameCheck = False
     name = ''
     num_frames = 1
 
-    return (name, num_frames)
+    for command in commands:
 
+        if command['op'] == 'frames':
+            num_frames = int(command['args'][0])
+            frameCheck = True
+        elif command['op'] == 'vary':
+            varyCheck = True
+        elif command['op'] == 'basename':
+            name = command['args'][0]
+            nameCheck = True
+
+    if varyCheck and not frameCheck:
+        print('Error: Vary command found without setting number of frames!')
+        exit()
+
+    elif frameCheck and not nameCheck:
+        print('Animation code present but basename was not set. Using "frame" as basename.')
+        name = 'frame'
+
+    return (name, num_frames)
 """======== second_pass( commands ) ==========
 
   In order to set the knobs for animation, we need to keep
@@ -45,6 +64,32 @@ def first_pass( commands ):
 def second_pass( commands, num_frames ):
     frames = [ {} for i in range(num_frames) ]
 
+    for command in commands:
+        if command['op'] == 'vary':
+            args = command['args']
+            knob_name = command['knob']
+            start_frame = args[0]
+            end_frame = args[1]
+            start_value = float(args[2])
+            end_value = float(args[3])
+            value = 0
+
+            if ((start_frame < 0) or
+                (end_frame >= num_frames) or
+                (end_frame <= start_frame)):
+                print('Invalid vary command for knob: ' + knob_name)
+                exit()
+
+            delta = (end_value - start_value) / (end_frame - start_frame)
+
+            for f in range(num_frames):
+                if f == start_frame:
+                    value = start_value
+                    frames[f][knob_name] = value
+                elif f >= start_frame and f <= end_frame:
+                    value = start_value + delta * (f - start_frame)
+                    frames[f][knob_name] = value
+                #print 'knob: ' + knob_name + '\tvalue: ' + str(frames[f][knob_name])
     return frames
 
 
@@ -80,114 +125,138 @@ def run(filename):
     tmp = new_matrix()
     ident( tmp )
 
-    stack = [ [x[:] for x in tmp] ]
-    screen = new_screen()
-    zbuffer = new_zbuffer()
-    tmp = []
-    step_3d = 50
-    consts = ''
-    coords = []
-    coords1 = []
-    shading_type = 'flat'
 
-    for command in commands:
-        print(command)
-        c = command['op']
-        args = command['args']
-        knob_value = 1
 
-        if c == 'box':
-            if command['constants']:
-                reflect = command['constants']
-                #color_list.append('box')
-                for i in range(36):
-                    color_list.append(reflect)
-            add_box(tmp,
-                    args[0], args[1], args[2],
-                    args[3], args[4], args[5])
-            matrix_mult( stack[-1], tmp )
-            if shading_type != "raytrace":
-                draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
-                tmp = []
-            
-                reflect = '.white'
-        elif c == 'plane':
-            if shading_type == 'raytrace':
+    for f in range(num_frames):
+        tmp = new_matrix()
+        ident( tmp )
+
+        stack = [ [x[:] for x in tmp] ]
+        screen = new_screen()
+        zbuffer = new_zbuffer()
+        tmp = []
+        step_3d = 100
+        consts = ''
+        coords = []
+        coords1 = []
+        shading_type = 'flat'
+        if num_frames > 1:
+                frame = frames[f]
+                for knob in frame:
+                    symbols[knob][1] = frame[knob]
+                    print('\tkob: ' + knob + '\tvalue: ' + str(frame[knob]))
+
+        for command in commands:
+            print(command)
+            c = command['op']
+            args = command['args']
+            knob_value = 1
+
+            if c == 'box':
                 if command['constants']:
                     reflect = command['constants']
-                    #color_list.append('plane')
-                    color_list.append(reflect)
-                add_plane(tmp, args[0], args[1], args[2], [args[3], args[4], args[5]])
-        elif c == 'sphere':
-            if command['constants']:
-                reflect = command['constants']
-                #color_list.append('sphere')
-                color_list.append(reflect)
-            if shading_type != "raytrace":
-                add_sphere(tmp,
-                       args[0], args[1], args[2], args[3], step_3d)
+                    #color_list.append('box')
+                    for i in range(36):
+                        color_list.append(reflect)
+                add_box(tmp,
+                        args[0], args[1], args[2],
+                        args[3], args[4], args[5])
                 matrix_mult( stack[-1], tmp )
+                if shading_type != "raytrace":
+                    draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
+                    tmp = []
+                
+                    reflect = '.white'
+            elif c == 'plane':
+                if shading_type == 'raytrace':
+                    if command['constants']:
+                        reflect = command['constants']
+                        #color_list.append('plane')
+                        color_list.append(reflect)
+                    add_plane(tmp, args[0], args[1], args[2], [args[3], args[4], args[5]])
+            elif c == 'sphere':
+                if command['constants']:
+                    reflect = command['constants']
+                    #color_list.append('sphere')
+                    color_list.append(reflect)
+                if shading_type != "raytrace":
+                    add_sphere(tmp,
+                        args[0], args[1], args[2], args[3], step_3d)
+                    matrix_mult( stack[-1], tmp )
+                    tmp = []
+                    reflect = '.white'
+                else:
+                    add_sphere_ray(tmp,
+                        args[0], args[1], args[2], args[3])
+            elif c == 'light':
+                out = []
+                out.append(symbols[command['light']][1]["location"])
+                out.append(symbols[command['light']][1]["color"])
+                #print(out)
+                light_array.append(out)
+            elif c == 'torus':
+                if command['constants']:
+                    reflect = command['constants']
+                add_torus(tmp,
+                        args[0], args[1], args[2], args[3], args[4], step_3d)
+                matrix_mult( stack[-1], tmp )
+                draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
                 tmp = []
                 reflect = '.white'
-            else:
-                add_sphere_ray(tmp,
-                       args[0], args[1], args[2], args[3])
-        elif c == 'light':
-            out = []
-            out.append(symbols[command['light']][1]["location"])
-            out.append(symbols[command['light']][1]["color"])
-            #print(out)
-            light_array.append(out)
-        elif c == 'torus':
-            if command['constants']:
-                reflect = command['constants']
-            add_torus(tmp,
-                      args[0], args[1], args[2], args[3], args[4], step_3d)
-            matrix_mult( stack[-1], tmp )
-            draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
-            tmp = []
-            reflect = '.white'
-        elif c == 'line':
-            add_edge(tmp,
-                     args[0], args[1], args[2], args[3], args[4], args[5])
-            matrix_mult( stack[-1], tmp )
-            draw_lines(tmp, screen, zbuffer, color)
-            tmp = []
-        elif c == 'move':
-            tmp = make_translate(args[0], args[1], args[2])
-            matrix_mult(stack[-1], tmp)
-            stack[-1] = [x[:] for x in tmp]
-            tmp = []
-        elif c == 'scale':
-            tmp = make_scale(args[0], args[1], args[2])
-            matrix_mult(stack[-1], tmp)
-            stack[-1] = [x[:] for x in tmp]
-            tmp = []
-        elif c == 'rotate':
-            theta = args[1] * (math.pi/180)
-            if args[0] == 'x':
-                tmp = make_rotX(theta)
-            elif args[0] == 'y':
-                tmp = make_rotY(theta)
-            else:
-                tmp = make_rotZ(theta)
-            matrix_mult( stack[-1], tmp )
-            stack[-1] = [ x[:] for x in tmp]
-            tmp = []
-        elif c == 'shading':
-            shading_type = command['shade_type']
-            
-        elif c == 'push':
-            stack.append([x[:] for x in stack[-1]] )
-        elif c == 'pop':
-            stack.pop()
-        elif c == 'display':
-            #print(tmp)
-            if shading_type == "raytrace":
-                draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
+            elif c == 'line':
+                add_edge(tmp,
+                        args[0], args[1], args[2], args[3], args[4], args[5])
+                matrix_mult( stack[-1], tmp )
+                draw_lines(tmp, screen, zbuffer, color)
+                tmp = []
+            elif c == 'move':
+                if command['knob']:
+                        knob_value = symbols[command['knob']][1]
+                tmp2 = make_translate(args[0] * knob_value, args[1] * knob_value, args[2] * knob_value)
+                matrix_mult(stack[-1], tmp2)
+                stack[-1] = [x[:] for x in tmp2]
+                tmp2 = []
+            elif c == 'scale':
+                if command['knob']:
+                    knob_value = symbols[command['knob']][1]
+                tmp = make_scale(args[0] * knob_value, args[1] * knob_value, args[2] * knob_value)
+                matrix_mult(stack[-1], tmp)
+                stack[-1] = [x[:] for x in tmp]
+                tmp = []
+            elif c == 'rotate':
+                if command['knob']:
+                        knob_value = symbols[command['knob']][1]
+                    
+                theta = args[1] * (math.pi/180) * knob_value
+                if args[0] == 'x':
+                    tmp = make_rotX(theta)
+                elif args[0] == 'y':
+                    tmp = make_rotY(theta)
+                else:
+                    tmp = make_rotZ(theta)
+                matrix_mult( stack[-1], tmp )
+                stack[-1] = [ x[:] for x in tmp]
+                tmp = []
+            elif c == 'shading':
+                shading_type = command['shade_type']
+                
+            elif c == 'push':
+                stack.append([x[:] for x in stack[-1]] )
+            elif c == 'pop':
+                stack.pop()
+            elif c == 'display':
+                #print(tmp)
+                if shading_type == "raytrace":
+                    draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
 
-            display(screen)
-        elif c == 'save':
-            save_extension(screen, args[0])
-        # end operation loop
-        
+                display(screen)
+            elif c == 'save':
+                save_extension(screen, args[0])
+            # end operation loop
+        if num_frames > 1:
+            fname = 'anim/%s%03d.png'%(name, f)
+            print('Saving frame: '  + fname)
+            save_extension(screen, fname)
+        # end fromes loop
+    if num_frames > 1:
+        make_animation(name)
