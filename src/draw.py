@@ -3,9 +3,9 @@ from matrix import *
 from gmath import *
 from raytrace import *
 
-shading_type = 'phong'
+#shading_type = 'raytrace'
 vertex_lighting = []
-def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, color):
+def draw_scanline(shading_type, x0, z0, x1, z1, y, screen, zbuffer, color):
     global vertex_lighting
     if x0 > x1:
         tx = x0
@@ -43,7 +43,7 @@ def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, color):
         x+= 1
         z+= delta_z
 
-def scanline_convert(polygons, i, screen, zbuffer, color):
+def scanline_convert(shading_type, polygons, i, screen, zbuffer, color):
     flip = False
     BOT = 0
     TOP = 2
@@ -159,13 +159,12 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
             color = (norm0, norm1, color_params)
 
             
-        draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
+        draw_scanline(shading_type, int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
         x0+= dx0
         z0+= dz0
         x1+= dx1
         z1+= dz1
         y+= 1
-
 
  
 def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
@@ -173,11 +172,16 @@ def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x1, y1, z1)
     add_point(polygons, x2, y2, z2)
 
-def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, reflect):
+def draw_polygons( color_list,shading_type, polygons, screen, zbuffer, view, ambient, light, symbols, reflect):
     if len(polygons) < 2:
         print('Need at least 3 points to draw')
         return
+    if shading_type == 'raytrace':
+        
+        trace_rays(color_list, polygons, screen, zbuffer, view, ambient, light, symbols, reflect)
+        return
     if shading_type == 'gouraud' or shading_type == 'phong':
+        #add_polygon(polygons, 0,0,0, XRES, 0,0, XRES, 0, -100)
         calculate_vertex_normals(polygons)
         #print('v normals: ', VERTEX_NORMALS)
     point = 0
@@ -187,9 +191,8 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
 
         #print normal
         if normal[2] > 0:
-            direction = vector_subtraction(polygons[point][0:3], view)
-            normalize(direction)
-            print(intersect_polygons(view,direction, polygons, point))
+            
+            
             if (shading_type == 'flat'):
                 color = get_lighting(normal, view, ambient, light, symbols, reflect )
             elif shading_type == 'gouraud' or shading_type == 'phong':
@@ -197,7 +200,7 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
                 #print('color', color)
             
             if shading_type != 'wireframe':
-                scanline_convert(polygons, point, screen, zbuffer, color)
+                scanline_convert(shading_type, polygons, point, screen, zbuffer, color)
                 
             else:
                 draw_line( int(polygons[point][0]),

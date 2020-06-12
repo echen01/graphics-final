@@ -38,7 +38,8 @@ tokens = (
     "DISPLAY", 
     "SCREEN", 
     "WEB", 
-    "CO"
+    "CO",
+    "PLANE"
 )
 
 reserved = {
@@ -54,6 +55,7 @@ reserved = {
     "torus" : "TORUS",
     "sphere" : "SPHERE",
     "box" : "BOX",
+    "plane" : "PLANE",
     "line" : "LINE",
     "mesh" : "MESH",
     "texture" : "TEXTURE",
@@ -194,6 +196,17 @@ def p_command_torus(p):
     if len(p) == 9 and isinstance(p[8], str):
           cmd['cs'] = p[8]
     cmd['args'] = p[arg_start:arg_start+5]
+    commands.append(cmd)
+
+def p_command_plane(p):
+    """command : PLANE NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER
+                | PLANE SYMBOL NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER"""
+    cmd = {'op': p[1], 'constants' : None, 'cs': None, 'args': []}
+    arg_start = 2
+    if isinstance(p[2], str):
+        cmd['constants'] = p[2]
+        arg_start = 3
+    cmd['args'] = p[arg_start:arg_start+6]
     commands.append(cmd)
 
 def p_command_box(p):

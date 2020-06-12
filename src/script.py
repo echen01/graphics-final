@@ -60,15 +60,12 @@ def run(filename):
         print("Parsing failed.")
         return
 
-    view = [0, 0.35, -1]
+    view = [0, 0, 854]
     ambient = [50,
                50,
                50]
-    light = [[5, 5, -10],
-             [150,
-              255,
-              255]]
-
+    light_array = []
+    color_list = []
     color = [0, 0, 0]
     symbols['.white'] = ['constants',
                          {'red': [0.2, 0.5, 0.5],
@@ -87,10 +84,11 @@ def run(filename):
     screen = new_screen()
     zbuffer = new_zbuffer()
     tmp = []
-    step_3d = 100
+    step_3d = 50
     consts = ''
     coords = []
     coords1 = []
+    shading_type = 'flat'
 
     for command in commands:
         print(command)
@@ -101,29 +99,52 @@ def run(filename):
         if c == 'box':
             if command['constants']:
                 reflect = command['constants']
+                #color_list.append('box')
+                for i in range(36):
+                    color_list.append(reflect)
             add_box(tmp,
                     args[0], args[1], args[2],
                     args[3], args[4], args[5])
             matrix_mult( stack[-1], tmp )
-            draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect)
-            tmp = []
-            reflect = '.white'
+            if shading_type != "raytrace":
+                draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
+                tmp = []
+            
+                reflect = '.white'
+        elif c == 'plane':
+            if shading_type == 'raytrace':
+                if command['constants']:
+                    reflect = command['constants']
+                    #color_list.append('plane')
+                    color_list.append(reflect)
+                add_plane(tmp, args[0], args[1], args[2], [args[3], args[4], args[5]])
         elif c == 'sphere':
             if command['constants']:
                 reflect = command['constants']
-            add_sphere(tmp,
+                #color_list.append('sphere')
+                color_list.append(reflect)
+            if shading_type != "raytrace":
+                add_sphere(tmp,
                        args[0], args[1], args[2], args[3], step_3d)
-            matrix_mult( stack[-1], tmp )
-            draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect)
-            tmp = []
-            reflect = '.white'
+                matrix_mult( stack[-1], tmp )
+                tmp = []
+                reflect = '.white'
+            else:
+                add_sphere_ray(tmp,
+                       args[0], args[1], args[2], args[3])
+        elif c == 'light':
+            out = []
+            out.append(symbols[command['light']][1]["location"])
+            out.append(symbols[command['light']][1]["color"])
+            #print(out)
+            light_array.append(out)
         elif c == 'torus':
             if command['constants']:
                 reflect = command['constants']
             add_torus(tmp,
                       args[0], args[1], args[2], args[3], args[4], step_3d)
             matrix_mult( stack[-1], tmp )
-            draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect)
+            draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
             tmp = []
             reflect = '.white'
         elif c == 'line':
@@ -154,7 +175,6 @@ def run(filename):
             stack[-1] = [ x[:] for x in tmp]
             tmp = []
         elif c == 'shading':
-            global shading_type
             shading_type = command['shade_type']
             
         elif c == 'push':
@@ -162,7 +182,12 @@ def run(filename):
         elif c == 'pop':
             stack.pop()
         elif c == 'display':
+            #print(tmp)
+            if shading_type == "raytrace":
+                draw_polygons(color_list, shading_type, tmp, screen, zbuffer, view, ambient, light_array, symbols, reflect)
+
             display(screen)
         elif c == 'save':
             save_extension(screen, args[0])
         # end operation loop
+        

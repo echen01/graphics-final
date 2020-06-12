@@ -65,7 +65,12 @@ def get_vertex_lighting(points, view, ambient, light, symbols, reflect):
     #print('light0', light0)
     return [light0, light1, light2]
 #lighting functions
-def get_lighting(normal, view, ambient, light, symbols, reflect ):
+def get_lighting(normal, view, ambient, light_array, symbols, reflect):
+    i = [0, 0, 0]
+    for light in light_array:
+        i = vector_addition(i, get_point_lighting(normal, view, ambient, light, symbols, reflect))
+    return i
+def get_point_lighting(normal, view, ambient, light, symbols, reflect ):
 
     n = normal[:]
     normalize(n)
@@ -183,5 +188,5 @@ def vector_subtraction(a, b):
 def scalar_multiplication(v, s):
     out = []
     for i in range (0, len(v)):
-        out[i] = v[i] * s
+        out.append(v[i] * s)
     return out

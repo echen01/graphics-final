@@ -2,14 +2,14 @@ import math
 import sys
 from display import *
 from gmath import *
+from matrix import *
+import time
 
-def intersect_sphere(point, origin, center, radius):
-    direction = [0,0,0]
+def intersect_sphere(origin, direction ,center, radius):
+    
     radius_vector = [0,0,0]
     for i in range(0, 3):
-        direction[i] = point[i] - origin[i]
-        radius_vector[i] = point[i] - center[i]
-    normalize(direction)
+        radius_vector[i] = origin[i] - center[i]
 
     b = 2 * dot_product(direction, radius_vector)
     c = dot_product(radius_vector, radius_vector) - radius * radius
@@ -30,8 +30,9 @@ def intersect_sphere(point, origin, center, radius):
             for i in range(0, 3):
                 intersection[i] = origin[i] + direction[i] * t
                 normal[i] = (intersection[i] - center[i]) / radius
-            return normal
-    return None
+            return t
+    return math.inf
+    
 
 def intersect_plane(origin, direction, normal, point):
     
@@ -54,6 +55,8 @@ def intersect_polygons(origin, direction, polygons, i):
     #normalize(direction)
     normal = calculate_normal(polygons, i)
     normalize(normal)
+    #if normal[2] < 0:
+    #    return math.inf, None
     points = [ [polygons[i][0], polygons[i][1], polygons[i][2]],
                [polygons[i+1][0], polygons[i+1][1], polygons[i+1][2]],
                [polygons[i+2][0], polygons[i+2][1], polygons[i+2][2]] ]
@@ -66,45 +69,46 @@ def intersect_polygons(origin, direction, polygons, i):
         scrap = absmax(normal)
 
     else:
-        return
-
-    #polygon_normal = cross_product(edge0, edge1)
+        return math.inf, None
+    '''
     edge0 = vector_subtraction(points[1], points[0])
     edge1 = vector_subtraction(points[2], points[1])
     edge2 = vector_subtraction(points[0], points[2])
-    #edge0.pop(scrap)
-    #edge1.pop(scrap)
-    #edge2.pop(scrap)
+    #normal = cross_product(edge0, edge2)
+    '''
     #print(points[0])
 
-    #v0 = points[0].copy().pop(scrap)
-    #v1 = points[1].copy().pop(scrap)
-    #v2 = points[2].copy().pop(scrap)
-    #ri.pop(scrap)
-    #out = ispointinside(ri, ((points[1], points[0]), (points[2], points[0]), (points[2], points[1])))
+    points[0].pop(scrap)
+    points[1].pop(scrap)
+    points[2].pop(scrap)
+    intersection.pop(scrap)
+    out = ispointinside(intersection, ((points[1], points[0]), (points[2], points[0]), (points[2], points[1])))
     
     #area = dot_product(polygon_normal, polygon_normal)
-    
+    '''
     c0 = vector_subtraction(intersection, points[0])
     c = cross_product(edge0, c0)
     if (dot_product(normal, c) < 0):
-        return False, False
+        return math.inf, None
     
     
     c1 = vector_subtraction(intersection, points[1])
     c = cross_product(edge1, c1)
     if (dot_product(normal, c) < 0):
-        return False, False
+        return math.inf, None
     
     
     c2 = vector_subtraction(intersection, points[2])
     c = cross_product(edge2, c2)
     if (dot_product(intersection, c) < 0):
-        return False, False
+        return math.inf, None
     out = True
+    '''
     if out:
-        print(intersection)
-        return t, normal
+        #print(intersection)
+        return t, normal   
+    else:
+        return math.inf, None
 def absmax(vector):
     value = 0
     index = 0
@@ -113,13 +117,12 @@ def absmax(vector):
             value = abs(vector[i])
             index = i
     return index
-#def trace_rays(origin, direction, bounce = 0):
-#_eps = 0.00001
-#_huge = sys.float_info.max
-#_tiny = sys.float_info.min
 
-'''
 def rayintersectseg(p, edge):
+    _eps = 0.00001
+    _huge = sys.float_info.max
+    _tiny = sys.float_info.min
+
 
     a,b = edge
     if a[1] > b[1]:
@@ -151,56 +154,168 @@ def odd(x): return x%2 == 1
  
 def ispointinside(p, poly):
     return odd(sum(rayintersectseg(p, edge) for edge in poly))
-'''
 
-def trace_ray(rayO, rayD, polygons, view, ambient, light, symbols, reflect):
+
+def trace_ray(color_list, rayO, rayD, polygons, view, ambient, light, symbols, reflect):
     point = 0
     t = math.inf
+    normal = []
+    shape = ''
+    
+
     while point < len(polygons) - 2:
-        
-        t_obj,normal = intersect_polygons(rayO, rayD, polygons, point)
+        if polygons[point] == polygons[point+1]:
+            #print("plane found")
+            n_obj = polygons[point+2][:3]
+            t_obj = intersect_plane(rayO, rayD, n_obj, polygons[point][:3])
+            #print(t_obj)
+            s_obj = 'plane'
+        elif math.inf == polygons[point][0]:
+            #print("FOUND SPHERE")
+            t_obj = intersect_sphere(rayO, rayD, polygons[point+1][:3], polygons[point+2][0] )
+            n_obj = None
+            s_obj ='sphere'
+        else:
+            t_obj,n_obj = intersect_polygons(rayO, rayD, polygons, point)
+            s_obj = 'poly'
         if t_obj < t:
-            t, obj_idx = t_obj, point
+            t, obj_idx, normal,shape = t_obj, point,n_obj, s_obj
         point += 3
 
     if t == math.inf:
-        return
+        return False
+    #print(t)
+    #print(normal)
     obj = polygons[obj_idx]
+    #print(t)
     M = [0,0,0]
     for x in range(0, 3):
         M[x] = rayO[x] + rayD[x] * t
-    
+    #print(normal)
+
+    if shape == "sphere":
+        normal = vector_subtraction(M, polygons[obj_idx + 1][0:3])
+        normalize(normal)
+    #print(normal)
     N_const = [0,0,0]
     for x in range(0, 3):
-        N_const[x] = M[x] + N[x] * .0001
+        N_const[x] = M[x] + normal[x] * .0001
     
-    #toL = normalize(vector_subtraction(light, M))
-    #l= [intersect_polygons(N_const, toL, polygons, i) for k, obj_sh in enumerate(polygons)]
-    color_ray = get_lighting(normal, view, ambient, light, symbols, reflect)
+    
+    reflect = color_list[int(obj_idx / 3 )]
+    '''
+    if shape == 'plane':
+         if (int(M[0] * 2) % 2) == (int(M[2] * 2) % 2):
+            reflect = "white"
+    '''
+    color_ray = [10,10,10]
+    for li in light:
+        l = []
+        toL = vector_subtraction(li[0], M)
+        normalize(toL)
+        point = 0
+        
+        while point < len(polygons) - 2:
+            if point != obj_idx:
+                if polygons[point] == polygons[point+1]:
+                    #print('plane shadow')
+                    shadow = intersect_plane(N_const, toL, normal, polygons[point][:3])
+                elif polygons[point][0] == math.inf:
+                    #print('sphere shadow')
+                    shadow = intersect_sphere(N_const, toL, polygons[point+1][:3], polygons[point+2][0])
+                else:
+            
+                    shadow, _ = intersect_polygons(N_const, toL, polygons, point)
+                if shadow:
+                    l.append(shadow)
+            point += 3
+        #print(l)
+        if len(l) > 0 and min(l) < math.inf:
+            #print("Found shadow!")
+            color_ray = vector_addition(color_ray, calculate_ambient(ambient, symbols[reflect][1]))
+            continue
+        #print(rayD)
+        
+        color_ray = vector_addition(color_ray, get_point_lighting(normal, view, ambient, li, symbols, reflect))
+        
+                                
+    
     return obj_idx, M, normal, color_ray
 
-def trace_rays(screen, zbuffer, view, polygons, ambient, light, symbols, reflect, max_depth = 4):
-    w = len(screen[0])
-    r = float(w) / len(screen)
-    for j in YRES:
+def trace_rays(color_list, polygons,screen, zbuffer, view, ambient, light, symbols, reflect, max_depth = 5):
+    '''
+    polygons = polygons[:]
+    scale = make_scale(2/XRES, 2/YRES, 2/XRES)
+    matrix_mult(scale,polygons)
+    trans = make_translate(-1, -1, 0)
+    matrix_mult(trans, polygons)
+    '''
+    #print("COLOR LIST", color_list)
+    #print("POLYS", polygons)
+    focal_length = math.sqrt(XRES **2 + YRES **2) / ( 2* math.tan( math.pi/8 ) )
+    print("FOCAL", focal_length) 
+    aspect_ratio = float(XRES) / YRES
+    x0 = -1 
+    x1 = 1  
+    xstep = (x1 - x0) / (XRES - 1)
+    y0 = -1 / aspect_ratio
+    y1 = 1 / aspect_ratio
+    ystep = (y1 - y0) / (YRES - 1)
+    start = time.time()
+    rayO = view
+    for j in range(YRES):
         if j % 10 == 0:
-            print(j / float(w) * 100 , "%")
-        for i in XRES:
+            print(j / float(XRES) * 100 , "%")
+        y = y0 + j * ystep
+        for i in range(XRES):
+            x = x0 + i * xstep
             color = [0,0,0]
-            rayD = normalize(vector_subtraction((i,j,0), view))
-            rayO = view
-            while depth < depth_max:
-                traced = trace_ray(rayO, rayD, polygons, view, ambient, light, symbols, reflect)
+            depth = 0
+            #print(x, y, 0)
+            rayD = vector_subtraction((x,y,0), view)
+            normalize(rayD)
+            reflection = [1,1,1]
+            while depth < max_depth:
+                traced = trace_ray(color_list, rayO, rayD, polygons, view, ambient, light, symbols, reflect)
                 if not traced:
                     break
                 obj_idx, M, N, color_ray = traced
                 RayO =[0,0,0]
                 for num in range(0, 3):
                     RayO[num] = M[num] + N[num] * .0001
-                rayD = vector_subtraction(rayD, scalar_multiplication(N, 2 * dot_product(rayD, N))))
+                rayD = vector_subtraction(rayD, scalar_multiplication(N, 2 * dot_product(rayD, N)))
                 normalize(rayD)
                 depth += 1
+                color_ray[0] = color_ray[0] * reflection[0]
+                color_ray[1] = color_ray[1] * reflection[1]
+                color_ray[2] = color_ray[2] * reflection[2]
                 color = vector_addition(color, color_ray)
-            plot(screen, zbuffer, color, i, j,)
+                #print(symbols)
+                reflect = color_list[int(obj_idx / 3)]
+                reflection[0] *= symbols[reflect][1]['red'][SPECULAR]
+                reflection[1] *= symbols[reflect][1]['green'][SPECULAR]
+                reflection[2] *= symbols[reflect][1]['blue'][SPECULAR]
 
-                    
+            limit_color(color)
+            #print("x, y, color", i, j, color)
+            # if color == [0,0,0]:
+            #    color = [255, 255, 255]
+            color = [int(c) for c in color]
+            plot(screen, zbuffer, color, i, j,0)
+            #print(color)
+    print(len(polygons))
+    elapsed = time.time() - start
+    print("Time Elapsed: %.2f seconds" % elapsed)
+
+def add_plane(polygons, x = 0, y = 0, z = 0, normal = [0,1,0]):
+    polygons.append([x,y,x,1])
+    polygons.append([x,y,z,1])
+    n = normal[:]
+    normalize(n)
+    n.append(1)
+    polygons.append(n)
+
+def add_sphere_ray(polygons, x, y, z, r):
+    polygons.append([math.inf, math.inf, math.inf, 1])
+    polygons.append([x, y, z, 1])
+    polygons.append([r, 0, 0, 1])
