@@ -3,17 +3,9 @@
 
 
 ### MDL Features
-- Light
-<br/>Sets a point light
-<br/>``` light symbol x y z r g b```
-<br/>
-- Shading
-<br/>Sets shading model (flat, gouraud, phong, raytrace)
-<br/>``` shading shading_type ```
-<br/>
-- Plane (Only works in raytrace mode)
-<br/>Creates an infinite 2D plane
-<br/>``` plane x y z x_normal y_normal z_normal ```
+- Light\  Sets a point light\  ``` light symbol x y z r g b```
+- Shading\ Sets shading model (flat, gouraud, phong, raytrace)\ ``` shading shading_type ```
+- Plane (Only works in raytrace mode)\ Creates an infinite 2D plane\ ``` plane x y z x_normal y_normal z_normal ```
 
 ### Shading Features
 - Flat shading
