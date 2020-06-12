@@ -20,6 +20,6 @@ Creates an infinite 2D plane<br/>
 - Ray tracing
 
 ### Notes
-- Objects on to be ray traced must be placed on a 2x2 grid from (-1, -1) to (1, 1) instead of the 500x500 grid. This is due to how the pinhole camera model works. I couldn't get it to work on the 500x500 grid. 
+- Objects to be ray traced must be placed on a 2x2 grid from (-1, -1) to (1, 1) instead of the 500x500 grid. This is due to how the pinhole camera model works. I couldn't get it to work on the 500x500 grid. 
 - Ray traced polygons become invisible or glitch out sometimes. 
 - I spent so much time debugging my ray tracing code that I had to abandon my original plan to create antialiasing and upscaling algorithms. 
